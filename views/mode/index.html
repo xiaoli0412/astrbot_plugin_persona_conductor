@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/><title>人格调度</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--line:#242a35;--text:#e8ecf3;--muted:#8b95a7;
+      --accent:#6ea8fe;--ok:#3fb950;--warn:#d29922;--purple:#a371f7}
+@media(prefers-color-scheme:light){:root{--bg:#f6f7f9;--panel:#fff;--line:#e3e6ec;
+      --text:#1a1d23;--muted:#6b7280;--accent:#2563eb}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);
+font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px}
+header{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+h1{font-size:19px;margin:0;font-weight:650}.sub{color:var(--muted);font-size:12.5px}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:20px}
+.mode{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;
+      cursor:pointer;transition:border-color .15s}
+.mode:hover{border-color:var(--accent)}
+.mode.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(110,168,254,.16)}
+.mode .name{font-size:15px;font-weight:650;margin-bottom:2px}
+.mode .desc{color:var(--muted);font-size:12px;margin-bottom:9px;min-height:34px}
+.mode .kv{display:flex;gap:12px;font-size:12px;color:var(--muted)}
+.mode .kv b{color:var(--text);font-weight:600}
+h2{font-size:14px;margin:22px 0 10px;font-weight:620;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+      padding:12px 15px;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
+.badge{font-size:11px;padding:1.5px 7px;border-radius:5px;background:rgba(110,168,254,.14);
+       color:var(--accent);font-weight:600}
+.badge.n{background:rgba(139,149,167,.15);color:var(--muted)}
+.badge.t{background:rgba(163,113,247,.16);color:var(--purple)}
+.badge.b{background:rgba(63,185,80,.15);color:var(--ok)}
+.umo{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--muted);
+     word-break:break-all;flex:1;min-width:0}
+select{padding:5px 9px;border-radius:7px;border:1px solid var(--line);
+       background:var(--bg);color:var(--text);font-size:12.5px}
+.empty{color:var(--muted);text-align:center;padding:26px 0;font-size:13px}
+button{padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+       color:var(--text);cursor:pointer;font-size:13.5px}button:hover{border-color:var(--accent)}
+.foot{color:var(--muted);font-size:11.5px;text-align:center;margin-top:22px}
+</style></head><body><div class="wrap">
+<header><h1>人格调度</h1><span class="sub" id="conn">连接中…</span></header>
+
+<div class="modes" id="modes"></div>
+
+<h2>会话与模式</h2>
+<div id="sessions"><div class="empty">还没有会话记录（说句话就会出现在这里）</div></div>
+
+<div style="margin-top:16px"><button id="refresh">刷新</button></div>
+<div class="foot">切换模式会为该会话创建独立的 conversation，上下文互不污染。</div>
+</div><script type="module">
+const PLUGIN_ID="astrbot_plugin_persona_conductor";
+const bridge=window.AstrBotPluginView||window.AstrBotPluginPage;
+const el=id=>document.getElementById(id);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const MODE_INFO={
+  normal:{name:"正常对话",cls:"n",desc:"只用 AstrBot 现有 persona，不注入任何世界书"},
+  tavern:{name:"酒馆模式",cls:"t",desc:"注入完整世界书，由角色卡世界观驱动"},
+  blend:{name:"融合模式",cls:"b",desc:"保留 persona，注入精简世界书（剔除重复档案）"}
+};
+async function apiGet(ep){const p=await bridge.apiGet(`${PLUGIN_ID}/${ep}`);if(p&&p.ok===false)throw new Error(p.error);return p&&Object.prototype.hasOwnProperty.call(p,"data")?p.data:p;}
+async function apiPost(ep,b){const p=await bridge.apiPost(`${PLUGIN_ID}/${ep}`,b||{});if(p&&p.ok===false)throw new Error(p.error);return p||{};}
+
+function render(d){
+  const modes=d.modes||{};
+  el("modes").innerHTML=Object.keys(MODE_INFO).map(m=>{
+    const info=MODE_INFO[m], st=modes[m]||{};
+    const on = (d.default_mode===m);
+    return `<div class="mode ${on?"on":""}" data-mode="${m}">
+      <div class="name">${info.name} ${on?'<span class="badge" style="font-size:10px">默认</span>':''}</div>
+      <div class="desc">${info.desc}</div>
+      <div class="kv"><span>条目 <b>${st.entries ?? "—"}</b></span>
+                      <span>字数 <b>${st.chars ?? "—"}</b></span></div>
+    </div>`;
+  }).join("");
+
+  const ss=d.sessions||{};
+  const keys=Object.keys(ss);
+  el("sessions").innerHTML=keys.length?keys.map(u=>{
+    const cur=ss[u].mode || d.default_mode || "normal";
+    return `<div class="card"><div class="row">
+      <span class="badge ${MODE_INFO[cur]?.cls||"n"}">${MODE_INFO[cur]?.name||cur}</span>
+      <span class="umo">${esc(u)}</span>
+      <select data-umo="${esc(u)}">
+        ${Object.keys(MODE_INFO).map(m=>`<option value="${m}" ${m===cur?"selected":""}>${MODE_INFO[m].name}</option>`).join("")}
+      </select>
+    </div></div>`;
+  }).join(""):`<div class="empty">还没有会话记录（说句话就会出现在这里）</div>`;
+
+  el("sessions").querySelectorAll("select[data-umo]").forEach(sel=>{
+    sel.onchange=async()=>{
+      const umo=sel.getAttribute("data-umo"), mode=sel.value;
+      try{ await apiPost("switch",{umo,mode}); load(); }
+      catch(e){ alert("切换失败："+e.message); }
+    };
+  });
+}
+async function load(){try{el("conn").textContent="已连接";render(await apiGet("overview"));}catch(e){el("conn").textContent="连接失败";}}
+async function boot(){if(!bridge){el("conn").textContent="bridge 未加载";return;}
+ await bridge.ready();await load();el("refresh").onclick=load;setInterval(load,20000);}
+boot();
+</script></body></html>

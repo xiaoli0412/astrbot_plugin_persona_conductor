@@ -1,0 +1,50 @@
+{
+  "enabled": {
+    "description": "启用三模式调度",
+    "type": "bool",
+    "default": true,
+    "hint": "总开关。关闭后 /模式 仍可切换（仅记录状态），但不会注入任何世界书。"
+  },
+  "default_mode": {
+    "description": "默认模式（normal | tavern | blend）",
+    "type": "string",
+    "default": "normal",
+    "hint": "新会话（state.json 里没有记录的 unified_msg_origin）使用的模式。normal=只用 persona 不注入；tavern=完整世界书；blend=persona+精简世界书。"
+  },
+  "inject_priority": {
+    "description": "注入钩子优先级",
+    "type": "int",
+    "default": 200,
+    "hint": "on_llm_request 的 handler 优先级，数值越大越先执行。默认 200：晚于 livingmemory(0)、早于 sticker_sense(250)。修改后需重载插件生效。"
+  },
+  "max_worldbook_chars": {
+    "description": "世界书注入字数上限",
+    "type": "int",
+    "default": 24000,
+    "hint": "超出即截断并追加截断标记。完整世界书约 1.99 万字，留了余量；调小可省 token。"
+  },
+  "tavern_exclude_uids": {
+    "description": "酒馆模式排除的 entry uid",
+    "type": "string",
+    "default": "",
+    "hint": "逗号分隔，如 015。酒馆模式一般留空（要全量）。"
+  },
+  "blend_exclude_uids": {
+    "description": "融合模式排除的 entry uid",
+    "type": "string",
+    "default": "015",
+    "hint": "逗号分隔。默认排除 015（人物A的深度档案），因为它与 AstrBot 现有 persona 高度重复；可改成其它 uid 或留空。"
+  },
+  "inject_hint": {
+    "description": "追加「不要复述设定」约束句",
+    "type": "bool",
+    "default": true,
+    "hint": "在世界书块后面追加一句：以上是本轮场景的世界设定……不要复述这些设定，像平常一样说话。"
+  },
+  "log_inject": {
+    "description": "记录注入日志",
+    "type": "bool",
+    "default": true,
+    "hint": "每次注入在日志里打一行：mode / 条目数 / 字数 / umo，便于排查。"
+  }
+}

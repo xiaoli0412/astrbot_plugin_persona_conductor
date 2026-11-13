@@ -1,0 +1,14 @@
+[
+  {
+    "uid": "001",
+    "trigger": "场景通用",
+    "content": "【示例条目 · 请替换成你自己的世界书】\n这里是世界观的基础设定。它会在 tavern / blend 模式下被注入到本轮请求里，让模型知道这个故事发生的舞台。\n写法建议：只写客观事实与规则，不要写「你要扮演谁」——角色是谁由 AstrBot 的 persona 决定。",
+    "constant": true
+  },
+  {
+    "uid": "002",
+    "trigger": "提到学校时",
+    "content": "【示例条目 · 触发式】\n这个条目只在对话里出现「学校」相关词时才注入，用来验证 trigger 机制。\ntrigger 留空 = 关键词不生效，只按 constant 常驻。",
+    "constant": false
+  }
+]

@@ -1,0 +1,17 @@
+name: astrbot_plugin_persona_conductor
+display_name: 人格调度
+short_desc: 正常对话 / 酒馆 / 融合 三模式一键切换，世界书按模式注入
+desc: >-
+  把「酒馆模式」和「正常对话」做成可切换的开关，再加一档「融合模式」。normal 只用 AstrBot 现有 persona、不注入任何世界书；tavern
+   注入完整世界书（14 条）由角色卡世界观驱动；blend 保留 persona 并注入精简世界书（剔除与 persona 重复的角色档案）。世界书只走 r
+  eq.extra_user_content_parts + mark_as_temp，不改 system_prompt、不落历史；每个模式绑定独立 conv
+  ersation，切模式即切上下文，互不污染。
+version: 0.1.0
+author: xiaoli0412
+repo: https://github.com/xiaoli0412/astrbot_plugin_persona_conductor
+category: 人格与上下文
+tags: [人格, 世界书, 酒馆, 上下文隔离]
+support_platforms:
+  - *
+astrbot_version: '>=4.24,<5'
+license: MIT
